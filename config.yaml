@@ -1,0 +1,80 @@
+# wxauto API 配置文件
+
+package: "wxautox"
+
+# 服务器配置
+server:
+  host: "0.0.0.0"  # 服务器监听地址 (IPv4: 0.0.0.0, IPv6: ::)
+  port: 8000       # 服务器监听端口
+  reload: true     # 是否启用热重载
+
+# 文件上传配置
+upload:
+  base_dir: "./uploads"  # 文件上传基础目录
+  max_size: 10485760    # 最大文件大小（10MB）
+  allowed_types: []    # 允许的文件类型（空列表表示允许所有类型）
+  chunk_size: 8192      # 文件读取块大小
+
+# 数据库配置
+database:
+  type: "sqlite"   # 数据库类型 (sqlite/mysql/mongodb)
+  # SQLite配置
+  sqlite:
+    path: "./data/wxauto.db"  # 数据库文件路径
+  # TODO: MySQL配置
+  mysql:
+    host: "localhost"
+    port: 3306
+    user: "root"
+    password: "password"
+    database: "wxauto"
+    charset: "utf8mb4"
+  # TODO: MongoDB配置
+  mongodb:
+    host: "localhost"
+    port: 27017
+    database: "wxauto"
+    username: ""
+    password: ""
+
+# 微信配置
+wechat:
+  app_path: "C:/Program Files/WeChat/WeChat.exe"  # 微信安装路径
+  language: "cn"                                  # 语言设置 (cn/cn_t/en)
+  enable_file_logger: true                        # 是否启用文件日志
+  message_hash: true                             # 是否启用消息哈希值
+  default_message_xbias: 51                       # 头像到消息X偏移量
+  force_message_xbias: true                      # 是否强制重新获取X偏移量
+  listen_interval: 1                              # 监听消息时间间隔(秒)
+  listener_executor_workers: 4                    # 监听执行器线程池大小
+  search_chat_timeout: 5                          # 搜索聊天对象超时时间(秒)
+  note_load_timeout: 30                           # 微信笔记加载超时时间(秒)
+
+# 文件存储配置
+storage:
+  default_save_path: "./wxauto"                 # 默认文件保存路径
+  log_path: "./wxauto_logs"                      # 日志文件路径
+
+# 日志配置
+logging:
+  level: "INFO"                                  # 日志级别 (DEBUG/INFO/WARNING/ERROR/CRITICAL)
+  format: "%(asctime)s - %(levelname)s - %(message)s"  # 日志格式
+  file: "wxauto_api.log"                        # 日志文件名
+
+# 认证配置
+auth:
+  token: "token"                # API访问令牌 (IPv6模式建议修改为更安全的token)
+
+# API配置
+api:
+  prefix: "/v1"                                  # API前缀
+  docs_url: "/docs"                              # Swagger UI路径
+  redoc_url: "/redoc"                            # ReDoc路径
+  openapi_url: "/openapi.json"                   # OpenAPI schema路径
+
+# 性能配置
+performance:
+  max_workers: 4                                 # 最大工作线程数
+  timeout: 30                                    # 操作超时时间(秒)
+  retry_attempts: 3                              # 重试次数
+  retry_delay: 1                                 # 重试延迟(秒)

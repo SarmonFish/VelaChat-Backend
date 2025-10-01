@@ -1,0 +1,19 @@
+[project]
+name = "wxauto-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "celery>=5.5.3",
+    "fastapi>=0.115.12",
+    "pydantic>=2.11.5",
+    "python-dotenv>=1.1.0",
+    "wxautox>=39.1.29",
+    "pyyaml>=6.0.1",
+    "sqlalchemy>=2.0.0",
+    "aiomysql>=0.2.0",
+    "motor>=3.3.0",
+    "uvicorn>=0.34.3",
+    "python-multipart>=0.0.20",
+]
