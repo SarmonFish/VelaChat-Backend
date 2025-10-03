@@ -41,10 +41,12 @@ class AddListenChatRequest(BaseRequest):
 # 获取下一个新消息请求
 class GetNextNewMessageRequest(BaseRequest):
     filter_mute: bool = False
+    auto_save_image: bool = True  # 是否自动保存图片消息
 
 # 获取所有消息请求
 class GetAllMessageRequest(BaseRequest):
     who: str = '文件传输助手'
+    auto_save_image: bool = True  # 是否自动保存图片消息
 
 # 根据id发送引用消息
 class SendQuoteByIdRequest(BaseRequest):

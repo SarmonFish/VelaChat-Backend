@@ -14,17 +14,21 @@ class SendMessageRequest(BaseRequest):
 
 # 获取所有消息请求
 class GetAllMessageRequest(BaseRequest):
-    pass
+    auto_save_image: bool = True  # 是否自动保存图片消息
 
 # 获取新消息请求
 class GetNewMessageRequest(BaseRequest):
-    pass
+    auto_save_image: bool = True  # 是否自动保存图片消息
 
 
 # 根据id发送引用消息请求
 class SendQuoteByIdRequest(BaseRequest):
     msg_id: str
     content: str
+
+# 下载消息图片请求
+class DownloadMessageImageRequest(BaseRequest):
+    msg_id: str
 
 class CloseSubWindowsRequest(BaseRequest):
     ...

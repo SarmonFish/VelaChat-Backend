@@ -32,9 +32,7 @@ async def get_all_message(
     service: ChatService = Depends()
 ):
     """获取微信子窗口所有消息"""
-    ser_get_all = service.get_all_message
-    print(ser_get_all)
-    return ser_get_all(who=request.who)
+    return service.get_all_message(who=request.who, auto_save_image=request.auto_save_image)
 
 @router.post(
     "/getnewmessage", 
@@ -46,7 +44,7 @@ async def get_new_message(
     service: ChatService = Depends()
 ):
     """获取微信子窗口新消息"""
-    return service.get_new_message(who=request.who)
+    return service.get_new_message(who=request.who, auto_save_image=request.auto_save_image)
 
 @router.post(
     "/msg/quote", 
@@ -61,6 +59,22 @@ async def send_quote_by_id(
     return service.send_quote_by_id(
         msg_id=request.msg_id,
         content=request.content,
+        who=request.who,
+        wxname=request.wxname
+    )
+
+@router.post(
+    "/msg/download_image", 
+    operation_id="[chat]下载消息图片",
+    summary="下载指定ID的消息图片到static目录"
+)
+async def download_message_image(
+    request: DownloadMessageImageRequest,
+    service: ChatService = Depends()
+):
+    """下载指定ID的消息图片到static目录"""
+    return service.download_message_image(
+        msg_id=request.msg_id,
         who=request.who,
         wxname=request.wxname
     )

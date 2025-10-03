@@ -92,11 +92,12 @@ class ChatService:
     def get_all_message(
             self,
             who: str,
+            auto_save_image: bool = True,
             wxname: Optional[str] = None
         ) -> APIResponse:
         """获取微信子窗口所有消息
         
-        对于图片消息(type=image)，会自动保存到本地，并在返回的消息中添加image_path字段
+        对于图片消息(type=image)，会根据auto_save_image参数决定是否自动保存到本地
         对于引用消息(type=quote)，会添加quote_content属性
         对于语音消息(type=voice)，会自动转换为文本，并在返回的消息中添加voice_text字段
         """
@@ -113,28 +114,29 @@ class ChatService:
                 
                 # 处理图片消息
                 if hasattr(msg, 'type') and msg.type == 'image':
-                    # 保存图片到本地
-                    image_path = self._save_image_message(msg, who)
-                    if image_path:
-                        msg_info['image_path'] = image_path
+                    # 根据auto_save_image参数决定是否保存图片到本地
+                    if auto_save_image:
+                        image_path = self._save_image_message(msg, who)
+                        if image_path:
+                            msg_info['image_path'] = image_path
+                    else:
+                        # 如果不自动保存，只提供图片的基本信息
+                        msg_info['image_saved'] = False
                 
                 # 处理引用消息，确保包含quote_content属性
-                if hasattr(msg, 'type') and msg.type == 'quote' and 'quote_content' not in msg_info:
-                    # 尝试获取引用内容
+                if hasattr(msg, 'type') and msg.type == 'quote':
                     if hasattr(msg, 'quote_content'):
                         msg_info['quote_content'] = msg.quote_content
-                    elif hasattr(msg, 'content'):
-                        # 如果没有quote_content属性，则使用content作为引用内容
-                        msg_info['quote_content'] = msg.content
                 
-                # 处理语音消息，转换为文本
+                # 处理语音消息
                 if hasattr(msg, 'type') and msg.type == 'voice':
+                    # 语音转文本
                     try:
-                        if hasattr(msg, 'to_text'):
-                            voice_text = msg.to_text()
-                            msg_info['voice_text'] = voice_text
-                    except Exception as voice_error:
-                        print(f"语音消息转换失败: {str(voice_error)}")
+                        voice_text = msg.to_text()
+                        msg_info['voice_text'] = voice_text
+                        print(f"语音消息已转换为文本: {voice_text}")
+                    except Exception as e:
+                        print(f"语音转文本失败: {e}")
                         msg_info['voice_text'] = None
                 
                 result['msg'].append(msg_info)
@@ -145,11 +147,12 @@ class ChatService:
     def get_new_message(
             self,
             who: str,
+            auto_save_image: bool = True,
             wxname: Optional[str] = None
         ) -> APIResponse:
         """获取微信子窗口新消息
         
-        对于图片消息(type=image)，会自动保存到本地，并在返回的消息中添加image_path字段
+        对于图片消息(type=image)，会根据auto_save_image参数决定是否自动保存到本地
         对于引用消息(type=quote)，会添加quote_content属性
         对于语音消息(type=voice)，会自动转换为文本，并在返回的消息中添加voice_text字段
         """
@@ -157,7 +160,7 @@ class ChatService:
         if subwin:
             result = subwin.ChatInfo()
             msgs = subwin.GetNewMessage()
-            # 确保消息包含sender字段
+            # 确保消息包含sender字段，并处理图片消息、引用消息和语音消息
             result['msg'] = []
             for msg in msgs:
                 msg_info = msg.info
@@ -166,28 +169,29 @@ class ChatService:
                 
                 # 处理图片消息
                 if hasattr(msg, 'type') and msg.type == 'image':
-                    # 保存图片到本地
-                    image_path = self._save_image_message(msg, who)
-                    if image_path:
-                        msg_info['image_path'] = image_path
+                    # 根据auto_save_image参数决定是否保存图片到本地
+                    if auto_save_image:
+                        image_path = self._save_image_message(msg, who)
+                        if image_path:
+                            msg_info['image_path'] = image_path
+                    else:
+                        # 如果不自动保存，只提供图片的基本信息
+                        msg_info['image_saved'] = False
                 
                 # 处理引用消息，确保包含quote_content属性
-                if hasattr(msg, 'type') and msg.type == 'quote' and 'quote_content' not in msg_info:
-                    # 尝试获取引用内容
+                if hasattr(msg, 'type') and msg.type == 'quote':
                     if hasattr(msg, 'quote_content'):
                         msg_info['quote_content'] = msg.quote_content
-                    elif hasattr(msg, 'content'):
-                        # 如果没有quote_content属性，则使用content作为引用内容
-                        msg_info['quote_content'] = msg.content
                 
-                # 处理语音消息，转换为文本
+                # 处理语音消息
                 if hasattr(msg, 'type') and msg.type == 'voice':
+                    # 语音转文本
                     try:
-                        if hasattr(msg, 'to_text'):
-                            voice_text = msg.to_text()
-                            msg_info['voice_text'] = voice_text
-                    except Exception as voice_error:
-                        print(f"语音消息转换失败: {str(voice_error)}")
+                        voice_text = msg.to_text()
+                        msg_info['voice_text'] = voice_text
+                        print(f"语音消息已转换为文本: {voice_text}")
+                    except Exception as e:
+                        print(f"语音转文本失败: {e}")
                         msg_info['voice_text'] = None
                 
                 result['msg'].append(msg_info)
@@ -256,3 +260,61 @@ class ChatService:
 
         except Exception as e:
             return APIResponse(success=False, message=str(e))
+
+    def download_message_image(
+            self,
+            msg_id: str,
+            who: str,
+            wxname: Optional[str] = None
+        ) -> APIResponse:
+        """下载指定ID的消息图片到static目录
+        
+        根据wxauto文档，图片消息有download方法可以将图片下载到指定目录
+        """
+        try:
+            # 获取消息对象
+            msg = self._get_msg_by_id(msg_id, who, wxname)
+            if msg is None:
+                return APIResponse(success=False, message=f"消息不存在：{msg_id}")
+            
+            # 检查是否为图片消息
+            if not (hasattr(msg, 'type') and msg.type == 'image'):
+                return APIResponse(success=False, message=f"消息不是图片类型：{msg.type}")
+            
+            # 创建图片保存目录到static/images目录下，使其可以通过URL访问
+            base_dir = Path(__file__).parent.parent.parent / "static" / "images" / who
+            base_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 下载图片
+            image_path = msg.download(dir_path=str(base_dir))
+            
+            if isinstance(image_path, Path):
+                # 返回相对路径，用于URL访问
+                relative_path = f"/static/images/{who}/{image_path.name}"
+                return APIResponse(
+                    success=True, 
+                    message="图片下载成功", 
+                    data={
+                        "image_path": relative_path,
+                        "absolute_path": str(image_path),
+                        "filename": image_path.name
+                    }
+                )
+            else:
+                # 如果download返回的是响应对象，尝试获取路径
+                if hasattr(image_path, 'path'):
+                    path_obj = Path(image_path.path)
+                    relative_path = f"/static/images/{who}/{path_obj.name}"
+                    return APIResponse(
+                        success=True, 
+                        message="图片下载成功", 
+                        data={
+                            "image_path": relative_path,
+                            "absolute_path": str(path_obj),
+                            "filename": path_obj.name
+                        }
+                    )
+                return APIResponse(success=False, message="图片下载失败")
+        except Exception as e:
+            print(f"下载消息图片失败: {e}")
+            return APIResponse(success=False, message=f"下载消息图片失败: {str(e)}")

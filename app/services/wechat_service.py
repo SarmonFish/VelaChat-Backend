@@ -187,11 +187,12 @@ class WeChatService:
     def get_all_message(
             self,
             who: str,
+            auto_save_image: bool = True,
             wxname: Optional[str] = None
         ) -> APIResponse:
         """获取所有消息
         
-        对于图片消息(type=image)，会自动保存到本地，并在返回的消息中添加image_path字段
+        对于图片消息(type=image)，会根据auto_save_image参数决定是否自动保存到本地
         对于引用消息(type=quote)，会添加quote_content属性
         对于语音消息(type=voice)，会自动转换为文本，并在返回的消息中添加voice_text字段
         """
@@ -212,10 +213,14 @@ class WeChatService:
                 
                 # 处理图片消息
                 if hasattr(msg, 'type') and msg.type == 'image':
-                    # 保存图片到本地
-                    image_path = self._save_image_message(msg, who)
-                    if image_path:
-                        msg_info['image_path'] = image_path
+                    # 根据auto_save_image参数决定是否保存图片到本地
+                    if auto_save_image:
+                        image_path = self._save_image_message(msg, who)
+                        if image_path:
+                            msg_info['image_path'] = image_path
+                    else:
+                        # 如果不自动保存，只提供图片的基本信息
+                        msg_info['image_saved'] = False
                 
                 # 处理引用消息，确保包含quote_content属性
                 if hasattr(msg, 'type') and msg.type == 'quote' and 'quote_content' not in msg_info:
@@ -283,11 +288,12 @@ class WeChatService:
     def get_next_new_message(
             self,
             filter_mute: bool = False,
+            auto_save_image: bool = True,
             wxname: Optional[str] = None
         ) -> APIResponse:
         """获取下一个新消息
         
-        对于图片消息(type=image)，会自动保存到本地，并在返回的消息中添加image_path字段
+        对于图片消息(type=image)，会根据auto_save_image参数决定是否自动保存到本地
         对于引用消息(type=quote)，会添加quote_content属性
         对于语音消息(type=voice)，会自动转换为文本，并在返回的消息中添加voice_text字段
         """
@@ -307,10 +313,14 @@ class WeChatService:
                     if hasattr(msg, 'type') and msg.type == 'image':
                         # 获取聊天对象名称
                         who = msg_info.get('name', 'unknown')
-                        # 保存图片到本地
-                        image_path = self._save_image_message(msg, who)
-                        if image_path:
-                            msg_info['image_path'] = image_path
+                        # 根据auto_save_image参数决定是否保存图片到本地
+                        if auto_save_image:
+                            image_path = self._save_image_message(msg, who)
+                            if image_path:
+                                msg_info['image_path'] = image_path
+                        else:
+                            # 如果不自动保存，只提供图片的基本信息
+                            msg_info['image_saved'] = False
                     
                     # 处理引用消息，确保包含quote_content属性
                     if hasattr(msg, 'type') and msg.type == 'quote' and 'quote_content' not in msg_info:
@@ -775,7 +785,13 @@ class WeChatService:
         
         try:
             Tools = get_pywechat_class('Tools')
-            contents, senders, types = Tools.pull_messages(friend=friend, number=number)
+            contents, senders, types = Tools.pull_messages(
+                friend=friend, 
+                number=number,
+                chats_only=False,
+                is_maximize=False,
+                close_wechat=False
+            )
             return APIResponse(
                 success=True, 
                 message="获取聊天记录成功", 
@@ -947,3 +963,40 @@ class WeChatService:
             return APIResponse(success=True, message="导出朋友圈缓存成功", data=result)
         except Exception as e:
             return APIResponse(success=False, message=f"导出朋友圈缓存失败: {str(e)}")
+
+    def check_my_info(self) -> APIResponse:
+        """获取微信个人信息 (pywechat)"""
+        if not is_pywechat_loaded():
+            return APIResponse(success=False, message="pywechat包未加载")
+        
+        try:
+            from pywechat import open_wechat
+            from pywechat import Tools
+            from pywechat.Uielements import Buttons
+            
+            # 检测语言并创建Buttons对象
+            Buttons = Buttons(language=Tools.language_detector())
+            
+            # 打开微信主窗口
+            main_window = open_wechat()
+            
+            # 获取我的昵称
+            myname = main_window.child_window(**Buttons.MySelfButton).window_text()
+            
+            # 获取wxid
+            wxid = Tools.find_current_wxid()
+            
+            # 不关闭微信窗口，保持窗口打开状态
+            # main_window.close()  # 注释掉关闭窗口的操作
+            
+            # 返回昵称和wxid
+            return APIResponse(
+                success=True, 
+                message="获取微信个人信息成功", 
+                data={
+                    'nickname': myname,
+                    'wxid': wxid
+                }
+            )
+        except Exception as e:
+            return APIResponse(success=False, message=f"获取微信个人信息失败: {str(e)}")

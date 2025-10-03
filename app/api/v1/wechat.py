@@ -98,8 +98,7 @@ async def get_all_message(
     service: WeChatService = Depends()
 ):
     """获取当前窗口加载的消息"""
-    print('xxxxxxxxxxxxxxxxxxxx')
-    return service.get_all_message(who=request.who, wxname=request.wxname)
+    return service.get_all_message(who=request.who, auto_save_image=request.auto_save_image, wxname=request.wxname)
 
 @router.post(
     "/sendurlcard", 
@@ -149,6 +148,7 @@ async def get_next_new_message(
     """获取微信下一个新消息"""
     return service.get_next_new_message(
         filter_mute=request.filter_mute, 
+        auto_save_image=request.auto_save_image,
         wxname=request.wxname
     )
 
@@ -703,3 +703,15 @@ async def pywechat_export_moments_cache(
         month=request.month,
         folder_path=request.folder_path
     )
+
+@router.get(
+    "/pywechat/check_my_info",
+    operation_id="[pywechat]获取微信个人信息",
+    response_model=APIResponse,
+    summary="pywechat: 获取当前登录微信的个人信息（昵称和wxid）"
+)
+async def pywechat_check_my_info(
+    service: WeChatService = Depends()
+):
+    """pywechat: 获取当前登录微信的个人信息（昵称和wxid）"""
+    return service.check_my_info()
